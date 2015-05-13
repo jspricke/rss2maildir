@@ -29,6 +29,8 @@ from os.path import join, isfile
 from subprocess import Popen, PIPE
 from time import mktime, time
 
+from config import *
+
 import sys
 import os
 import errno
@@ -37,22 +39,6 @@ with warnings.catch_warnings():
     if sys.py3kwarning:
         warnings.filterwarnings("ignore", ".*rfc822 has been removed",
                                 DeprecationWarning)
-
-
-maildir = '.maildir/Feeds'
-
-
-def tagesschau(entry):
-    return 'sportschau' in entry.link
-
-
-feeds = [
-    'exec:heise.py',
-    {'url': 'http://www.tagesschau.de/xml/rss2', 'filter': tagesschau, 'use_uid': True},
-    {'url': 'https://blog.fefe.de/rss.xml?html', 'use_header': False},
-    'http://git.suckless.org/dwm/atom',
-    {'url': 'https://github.com/weechat/scripts/commits/master.atom', 'title': 'weechat scripts'},
-]
 
 
 class MyMaildir(Maildir):
