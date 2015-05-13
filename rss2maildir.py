@@ -157,6 +157,7 @@ def main():
         filter_func = feed_entry['filter'] if 'filter' in feed_entry else lambda x: False
         use_uid = feed_entry['use_uid'] if 'use_uid' in feed_entry else False
         use_header = feed_entry['use_header'] if 'use_header' in feed_entry else True
+        use_date = feed_entry['use_date'] if 'use_date' in feed_entry else True
 
         last_file = join(maildir, sha256(feed_url).hexdigest())
         if use_header and isfile(last_file):
@@ -196,7 +197,7 @@ def main():
                 content = entry.summary.encode('utf-8') if 'summary' in entry else entry.link
 
             key = '%s.%s' % (file_title, sha256(content).hexdigest())
-            date = get_date(entry, feed, now)
+            date = get_date(entry, feed, now) if use_date else now
 
             if key not in box and not filter_func(entry) and now - date < 60*60*24*7:
                 box.add((mail(title, entry, date), key))
