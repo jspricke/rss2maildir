@@ -153,7 +153,6 @@ def main():
     box = MyMaildir(maildir)
     for feed_entry in feeds:
         feed_url = feed_entry['url'] if 'url' in feed_entry else feed_entry
-        title = feed_entry['title'] if 'title' in feed_entry else None
         filter_func = feed_entry['filter'] if 'filter' in feed_entry else lambda x: False
         use_uid = feed_entry['use_uid'] if 'use_uid' in feed_entry else False
         use_header = feed_entry['use_header'] if 'use_header' in feed_entry else True
@@ -178,8 +177,7 @@ def main():
             elif 'modified' in feed:
                 open(last_file, 'w').write('M %s' % feed.modified)
 
-        if not title:
-            title = feed.feed.title
+        title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
 
         san_dict = {
             ' ': '_',
