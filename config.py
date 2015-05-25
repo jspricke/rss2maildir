@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Combine multiple Heise RSS feeds
+# Python script to convert from RSS to Maildir (config file)
 #
 # Copyright (C) 2015  Jochen Sprickerhof
 #
@@ -25,7 +25,9 @@ def tagesschau(entry):
 
 
 feeds = [
-    'exec:./heise.py',
+    {'url': 'http://www.heise.de/newsticker/heise-atom.xml', 'title': 'Heise', 'use_uid': True},
+    {'url': 'http://www.heise.de/open/news/news-atom.xml', 'title': 'Heise', 'use_uid': True},
+    {'url': 'http://www.heise.de/security/news/news-atom.xml', 'title': 'Heise', 'use_uid': True},
     {'url': 'http://www.tagesschau.de/xml/rss2', 'filter': tagesschau, 'use_uid': True},
     {'url': 'https://blog.fefe.de/rss.xml?html', 'use_header': False},
     'http://git.suckless.org/dwm/atom',
