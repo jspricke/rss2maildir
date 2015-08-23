@@ -21,13 +21,13 @@
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formataddr, formatdate
+from email.utils import formataddr
 from feedparser import parse
 from hashlib import sha256
 from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, ExternalClashError
 from os.path import join, isfile
 from subprocess import Popen, PIPE
-from time import mktime, time
+from time import gmtime, mktime, strftime
 
 from config import *
 
@@ -116,13 +116,13 @@ def replace_dict(string, dict):
 
 def get_date(entry, feed, updated):
     if 'updated_parsed' in entry.keys():
-        return mktime(entry.updated_parsed)
+        return entry.updated_parsed
     if 'published_parsed' in entry:
-        return mktime(entry.published_parsed)
+        return entry.published_parsed
     if 'updated_parsed' in feed.feed:
-        return mktime(feed.feed.updated_parsed)
+        return feed.feed.updated_parsed
     if 'updated_parsed' in feed:
-        return mktime(feed.updated_parsed)
+        return feed.updated_parsed
     return updated
 
 
@@ -132,7 +132,7 @@ def mail(title, entry, date):
         u'»': '',
     }
     msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')), 'utf-8')
-    msg['Date'] = formatdate(date)
+    msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
     msg['Subject'] = Header(entry.title, 'utf-8')
     summary = entry.summary if 'summary' in entry else entry.link
     author = 'Author: %s<br>' % entry.author if 'author' in entry else ''
@@ -149,7 +149,7 @@ def pparse(feed_url, etag=None, modified=None):
 
 
 def main():
-    now = time()
+    now = gmtime()
     box = MyMaildir(maildir)
     for feed_entry in feeds:
         feed_url = feed_entry['url'] if 'url' in feed_entry else feed_entry
@@ -197,7 +197,7 @@ def main():
             key = '%s.%s' % (file_title, sha256(content).hexdigest())
             date = get_date(entry, feed, now) if use_date else now
 
-            if key not in box and not filter_func(entry) and now - date < 60*60*24*7:
+            if key not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
                 box.add((mail(title, entry, date), key))
 
 if __name__ == '__main__':
