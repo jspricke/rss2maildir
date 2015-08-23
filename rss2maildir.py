@@ -29,7 +29,7 @@ from os.path import join, isfile
 from subprocess import Popen, PIPE
 from time import gmtime, mktime, strftime
 
-from config import *
+import config
 
 import sys
 import os
@@ -150,15 +150,15 @@ def pparse(feed_url, etag=None, modified=None):
 
 def main():
     now = gmtime()
-    box = MyMaildir(maildir)
-    for feed_entry in feeds:
+    box = MyMaildir(config.maildir)
+    for feed_entry in config.feeds:
         feed_url = feed_entry['url'] if 'url' in feed_entry else feed_entry
         filter_func = feed_entry['filter'] if 'filter' in feed_entry else lambda x: False
         use_uid = feed_entry['use_uid'] if 'use_uid' in feed_entry else False
         use_header = feed_entry['use_header'] if 'use_header' in feed_entry else True
         use_date = feed_entry['use_date'] if 'use_date' in feed_entry else True
 
-        last_file = join(maildir, sha256(feed_url).hexdigest())
+        last_file = join(config.maildir, sha256(feed_url).hexdigest())
         if use_header and isfile(last_file):
             last = open(last_file).read()
             if last.startswith('E'):
