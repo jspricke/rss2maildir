@@ -126,6 +126,19 @@ def get_date(entry, feed, updated):
     return updated
 
 
+def get_id(entry, use_uid):
+    if use_uid and 'id' in entry:
+        content = entry.id
+    elif 'summary' in entry and entry.summary:
+        content = entry.summary
+    elif 'title' in entry and entry.title:
+        content = entry.title
+    else:
+        content = entry.link
+
+    return sha256(content.encode('utf-8')).hexdigest()
+
+
 def mail(title, entry, date):
     msg = MIMEMultipart('alternative')
     san_dict = {
@@ -189,12 +202,7 @@ def main():
         file_title = ''.join([i if ord(i) < 128 else '_' for i in file_title])
 
         for entry in reversed(feed.entries):
-            if use_uid:
-                content = entry.id if 'id' in entry else entry.link
-            else:
-                content = entry.summary.encode('utf-8') if 'summary' in entry else entry.link
-
-            key = '%s.%s' % (file_title, sha256(content).hexdigest())
+            key = '%s.%s' % (file_title, get_id(entry, use_uid))
             date = get_date(entry, feed, now) if use_date else now
 
             if key not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
