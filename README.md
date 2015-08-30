@@ -3,9 +3,8 @@
 ## Configuration
 
 - Adopt maildir and feeds in rss2maildir.py.
-- Setup cronjobs:
+- Setup cronjob:
 
 ```
 */30 * * * * rss2maildir.py
-25 3 * * * find ~/.maildir/Feeds/cur/ -ctime +7 -name "*,S" -delete
 ```

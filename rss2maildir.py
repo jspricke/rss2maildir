@@ -165,7 +165,8 @@ def pparse(feed_url, etag=None, modified=None):
 
 def main():
     now = gmtime()
-    box = MyMaildir(config.maildir)
+    box = MyMaildir(config.maildir, factory=MaildirMessage)
+    old_mails = box.keys()
     cache_new = {}
 
     try:
@@ -195,19 +196,21 @@ def main():
                 cache_new[feed_url] = {}
                 cache_new[feed_url]['modified'] = feed.modified
 
-        if len(feed.entries) == 0:
-            continue
-
-        title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
-
         san_dict = {
             ' ': '_',
             '.': '_',
             ':': '_',
             '/': '_',
         }
-        file_title = replace_dict(title, san_dict)
+        file_title = feed_entry['title'] if 'title' in feed_entry else feed_url
+        file_title = replace_dict(file_title, san_dict)
         file_title = ''.join([i if ord(i) < 128 else '_' for i in file_title])
+
+        if len(feed.entries) == 0:
+            old_mails = [m for m in old_mails if not m.startswith(file_title)]
+            continue
+
+        title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
 
         for entry in reversed(feed.entries):
             key = '%s.%s' % (file_title, get_id(entry, use_uid))
@@ -215,7 +218,15 @@ def main():
 
             if key not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
                 box.add((mail(title, entry, date), key))
+
+            if key in old_mails:
+                old_mails.remove(key)
+
     dump(cache_new, open(join(config.maildir, 'cache.json'), 'w'), indent=2)
+
+    for m in old_mails:
+        if 'F' not in box.get_message(m).get_flags():
+            del box[m]
 
 if __name__ == '__main__':
     main()
