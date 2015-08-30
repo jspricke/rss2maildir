@@ -156,7 +156,8 @@ def mail(title, entry, date):
 
 def pparse(feed_url, etag=None, modified=None):
     if feed_url.startswith('exec:'):
-        return parse(Popen(feed_url[5:], stdout=PIPE, shell=True).communicate()[0], etag=etag, modified=modified)
+        process = Popen(feed_url[len('exec:'):], stdout=PIPE, shell=True)
+        return parse(process.communicate()[0], etag=etag, modified=modified)
     else:
         return parse(feed_url, etag=etag, modified=modified)
 
