@@ -24,6 +24,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 from feedparser import parse
 from hashlib import sha256
+from json import dump, load
 from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, ExternalClashError
 from os.path import join, isfile
 from subprocess import Popen, PIPE
@@ -165,6 +166,13 @@ def pparse(feed_url, etag=None, modified=None):
 def main():
     now = gmtime()
     box = MyMaildir(config.maildir)
+    cache_new = {}
+
+    try:
+        cache = load(open(join(config.maildir, 'cache.json')))
+    except IOError:
+        cache = {}
+
     for feed_entry in config.feeds:
         feed_url = feed_entry['url'] if 'url' in feed_entry else feed_entry
         filter_func = feed_entry['filter'] if 'filter' in feed_entry else lambda x: False
@@ -172,24 +180,23 @@ def main():
         use_header = feed_entry['use_header'] if 'use_header' in feed_entry else True
         use_date = feed_entry['use_date'] if 'use_date' in feed_entry else True
 
-        last_file = join(config.maildir, sha256(feed_url).hexdigest())
-        if use_header and isfile(last_file):
-            last = open(last_file).read()
-            if last.startswith('E'):
-                feed = pparse(feed_url, etag=last[2:])
-            else:
-                feed = pparse(feed_url, modified=last[2:])
+        if use_header and feed_url in cache and 'etag' in cache[feed_url]:
+            feed = pparse(feed_url, etag=cache[feed_url]['etag'])
+        elif use_header and feed_url in cache and 'modified' in cache[feed_url]:
+            feed = pparse(feed_url, modified=cache[feed_url]['modified'])
         else:
             feed = pparse(feed_url)
 
-        if len(feed.entries) == 0:
-            continue
-
         if use_header:
             if 'etag' in feed:
-                open(last_file, 'w').write('E %s' % feed.etag)
+                cache_new[feed_url] = {}
+                cache_new[feed_url]['etag'] = feed.etag
             elif 'modified' in feed:
-                open(last_file, 'w').write('M %s' % feed.modified)
+                cache_new[feed_url] = {}
+                cache_new[feed_url]['modified'] = feed.modified
+
+        if len(feed.entries) == 0:
+            continue
 
         title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
 
@@ -208,6 +215,7 @@ def main():
 
             if key not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
                 box.add((mail(title, entry, date), key))
+    dump(cache_new, open(join(config.maildir, 'cache.json'), 'w'), indent=2)
 
 if __name__ == '__main__':
     main()
