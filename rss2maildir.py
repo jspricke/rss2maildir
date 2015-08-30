@@ -164,7 +164,6 @@ def pparse(feed_url, etag=None, modified=None):
 
 
 def main():
-    now = gmtime()
     box = MyMaildir(config.maildir, factory=MaildirMessage)
     old_mails = box.keys()
     cache_new = {}
@@ -211,6 +210,7 @@ def main():
             continue
 
         title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
+        now = gmtime()
 
         for entry in reversed(feed.entries):
             key = '%s.%s' % (file_title, get_id(entry, use_uid))
