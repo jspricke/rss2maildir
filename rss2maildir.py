@@ -26,7 +26,7 @@ from feedparser import parse
 from hashlib import sha256
 from json import dump, load
 from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, ExternalClashError
-from os.path import join, isfile
+from os.path import join
 from subprocess import Popen, PIPE
 from time import gmtime, mktime, strftime
 
@@ -213,20 +213,20 @@ def main():
         now = gmtime()
 
         for entry in reversed(feed.entries):
-            key = '%s.%s' % (file_title, get_id(entry, use_uid))
+            file_name = '%s.%s' % (file_title, get_id(entry, use_uid))
             date = get_date(entry, feed, now) if use_date else now
 
-            if key not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
-                box.add((mail(title, entry, date), key))
+            if file_name not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
+                box.add((mail(title, entry, date), file_name))
 
-            if key in old_mails:
-                old_mails.remove(key)
+            if file_name in old_mails:
+                old_mails.remove(file_name)
 
     dump(cache_new, open(join(config.maildir, 'cache.json'), 'w'), indent=2)
 
-    for m in old_mails:
-        if 'F' not in box.get_message(m).get_flags():
-            del box[m]
+    for message in old_mails:
+        if 'F' not in box.get_message(message).get_flags():
+            del box[message]
 
 if __name__ == '__main__':
     main()
