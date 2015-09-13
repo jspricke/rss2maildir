@@ -25,6 +25,7 @@ from email.utils import formataddr
 from feedparser import parse
 from hashlib import sha256
 from json import dump, load
+from lxml.html.diff import htmldiff
 from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, ExternalClashError
 from os.path import join
 from subprocess import Popen, PIPE
@@ -140,21 +141,6 @@ def get_id(entry, use_uid):
     return sha256(content.encode('utf-8')).hexdigest()
 
 
-def mail(title, entry, date):
-    msg = MIMEMultipart('alternative')
-    san_dict = {
-        u'»': '',
-    }
-    msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')), 'utf-8')
-    msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
-    msg['Subject'] = Header(entry.title, 'utf-8')
-    summary = entry.summary if 'summary' in entry else entry.link
-    author = 'Author: %s<br>' % entry.author if 'author' in entry else ''
-    html = '<a href="%s">Link</a><br>%s<br>%s' % (entry.link, author, summary)
-    msg.attach(MIMEText(html, 'html', 'utf-8'))
-    return msg
-
-
 def pparse(feed_url, etag=None, modified=None):
     if feed_url.startswith('exec:'):
         process = Popen(feed_url[len('exec:'):], stdout=PIPE, shell=True)
@@ -187,12 +173,11 @@ def main():
         else:
             feed = pparse(feed_url)
 
+        cache_new[feed_url] = {}
         if use_header:
             if 'etag' in feed:
-                cache_new[feed_url] = {}
                 cache_new[feed_url]['etag'] = feed.etag
             elif 'modified' in feed:
-                cache_new[feed_url] = {}
                 cache_new[feed_url]['modified'] = feed.modified
 
         san_dict = {
@@ -207,17 +192,40 @@ def main():
 
         if len(feed.entries) == 0:
             old_mails = [m for m in old_mails if not m.startswith(file_title)]
+            cache_new[feed_url]['entries'] = cache.get(feed_url, {}).get('entries', {})
             continue
 
+        cache_new[feed_url]['entries'] = {}
         title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
         now = gmtime()
 
         for entry in reversed(feed.entries):
+            summary = entry.get('summary', entry.link)
+            author = 'Author: %s<br>' % entry.author if 'author' in entry else ''
+            content = '<a href="%s">Link</a><br>%s<br>%s' % (entry.link, author, summary)
+
+            uid = entry.id if 'id' in entry else entry.link
+
+            cache_new[feed_url]['entries'][uid] = content
+
+            old_content = cache.get(feed_url, {}).get('entries', {}).get(uid)
+
+            if old_content and old_content != content:
+                content = htmldiff(old_content, content)
+
             file_name = '%s.%s' % (file_title, get_id(entry, use_uid))
             date = get_date(entry, feed, now) if use_date else now
 
             if file_name not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
-                box.add((mail(title, entry, date), file_name))
+                msg = MIMEMultipart('alternative')
+                san_dict = {
+                    u'»': '',
+                }
+                msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')), 'utf-8')
+                msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
+                msg['Subject'] = Header(entry.title, 'utf-8')
+                msg.attach(MIMEText(content, 'html', 'utf-8'))
+                box.add((msg, file_name))
 
             if file_name in old_mails:
                 old_mails.remove(file_name)
