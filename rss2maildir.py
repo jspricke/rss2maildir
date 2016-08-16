@@ -30,6 +30,7 @@ from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, Ext
 from os.path import join
 from subprocess import Popen, PIPE
 from time import gmtime, mktime, strftime
+from html2text import HTML2Text
 
 import config
 
@@ -199,6 +200,11 @@ def main():
         title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
         now = gmtime()
 
+        html2text = HTML2Text()
+        html2text.inline_links = False
+        html2text.unicode_snob = True
+        html2text.wrap_links = False
+
         for entry in reversed(feed.entries):
             summary = entry.get('summary', entry.link)
             author = 'Author: %s<br>' % entry.author if 'author' in entry else ''
@@ -224,6 +230,7 @@ def main():
                 msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')), 'utf-8')
                 msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
                 msg['Subject'] = Header(entry.title.replace('\n', ''), 'utf-8')
+                msg.attach(MIMEText(html2text.handle(content), 'plain', 'utf-8'))
                 msg.attach(MIMEText(content, 'html', 'utf-8'))
                 box.add((msg, file_name))
 
