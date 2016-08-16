@@ -223,7 +223,7 @@ def main():
                 }
                 msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')), 'utf-8')
                 msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
-                msg['Subject'] = Header(entry.title, 'utf-8')
+                msg['Subject'] = Header(entry.title.replace('\n', ''), 'utf-8')
                 msg.attach(MIMEText(content, 'html', 'utf-8'))
                 box.add((msg, file_name))
 
