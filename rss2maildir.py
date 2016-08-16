@@ -30,6 +30,7 @@ from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, Ext
 from os.path import join
 from subprocess import Popen, PIPE
 from time import gmtime, mktime, strftime
+from html2text import html2text
 
 import config
 
@@ -225,6 +226,7 @@ def main():
                 msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
                 msg['Subject'] = Header(entry.title.replace('\n', ''), 'utf-8')
                 msg.attach(MIMEText(content, 'html', 'utf-8'))
+                msg.attach(MIMEText(html2text(content), 'plain', 'utf-8'))
                 box.add((msg, file_name))
 
             if file_name in old_mails:
