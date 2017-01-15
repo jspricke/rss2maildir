@@ -27,7 +27,7 @@ from hashlib import sha256
 from json import dump, load
 from lxml.html.diff import htmldiff
 from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, ExternalClashError
-from os.path import join
+from os.path import expanduser, join
 from subprocess import Popen, PIPE
 from time import gmtime, mktime, strftime
 from html2text import HTML2Text
@@ -151,12 +151,12 @@ def pparse(feed_url, etag=None, modified=None):
 
 
 def main():
-    box = MyMaildir(config.maildir, factory=MaildirMessage)
+    box = MyMaildir(expanduser(config.maildir), factory=MaildirMessage)
     old_mails = box.keys()
     cache_new = {}
 
     try:
-        cache = load(open(join(config.maildir, 'cache.json')))
+        cache = load(open(join(expanduser(config.maildir), 'cache.json')))
     except IOError:
         cache = {}
 
@@ -237,7 +237,7 @@ def main():
             if file_name in old_mails:
                 old_mails.remove(file_name)
 
-    dump(cache_new, open(join(config.maildir, 'cache.json'), 'w'), indent=2)
+    dump(cache_new, open(join(expanduser(config.maildir), 'cache.json'), 'w'), indent=2)
 
     for message in old_mails:
         if 'F' not in box.get_message(message).get_flags():
