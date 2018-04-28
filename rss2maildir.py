@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/python3
 #
 # Python script to convert from RSS to Maildir
 #
@@ -34,18 +33,12 @@ from html2text import HTML2Text
 
 import config
 
-import sys
 import os
 import errno
-import warnings
-with warnings.catch_warnings():
-    if sys.py3kwarning:
-        warnings.filterwarnings("ignore", ".*rfc822 has been removed",
-                                DeprecationWarning)
 
 
 class MyMaildir(Maildir):
-    """Modified from /usr/lib/python2.7/mailbox.py"""
+    """Modified from /usr/lib/python3.6/mailbox.py"""
 
     def add(self, add):
         """Add message and return assigned key."""
@@ -76,12 +69,13 @@ class MyMaildir(Maildir):
         # final position in order to prevent race conditions with changes
         # from other programs
         try:
-            if hasattr(os, 'link'):
+            try:
                 os.link(tmp_file.name, dest)
-                os.remove(tmp_file.name)
-            else:
+            except (AttributeError, PermissionError):
                 os.rename(tmp_file.name, dest)
-        except OSError, e:
+            else:
+                os.remove(tmp_file.name)
+        except OSError as e:
             os.remove(tmp_file.name)
             if e.errno == errno.EEXIST:
                 raise ExternalClashError('Name clash with existing message: %s'
@@ -95,16 +89,12 @@ class MyMaildir(Maildir):
         path = os.path.join(self._path, 'tmp', key)
         try:
             os.stat(path)
-        except OSError, e:
-            if e.errno == errno.ENOENT:
-                Maildir._count += 1
-                try:
-                    return _create_carefully(path)
-                except OSError, e:
-                    if e.errno != errno.EEXIST:
-                        raise
-            else:
-                raise
+        except FileNotFoundError:
+            Maildir._count += 1
+            try:
+                return _create_carefully(path)
+            except FileExistsError:
+                pass
 
         # Fall through to here if stat succeeded or open raised EEXIST.
         raise ExternalClashError('Name clash prevented file creation: %s' %
@@ -118,7 +108,7 @@ def replace_dict(string, dict):
 
 
 def get_date(entry, feed, updated):
-    if 'updated_parsed' in entry.keys():
+    if 'updated_parsed' in entry:
         return entry.updated_parsed
     if 'published_parsed' in entry:
         return entry.published_parsed
@@ -152,7 +142,7 @@ def pparse(feed_url, etag=None, modified=None):
 
 def main():
     box = MyMaildir(expanduser(config.maildir), factory=MaildirMessage)
-    old_mails = box.keys()
+    old_mails = list(box.keys())
     cache_new = {}
 
     try:
@@ -225,13 +215,13 @@ def main():
             if file_name not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60 * 60 * 24 * 7:
                 msg = MIMEMultipart('alternative')
                 san_dict = {
-                    u'»': '',
+                    '»': '',
                 }
-                msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')), 'utf-8')
+                msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')))
                 msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
-                msg['Subject'] = Header(entry.title.replace('\n', ''), 'utf-8')
-                msg.attach(MIMEText(html2text.handle(content), 'plain', 'utf-8'))
-                msg.attach(MIMEText(content, 'html', 'utf-8'))
+                msg['Subject'] = Header(entry.title.replace('\n', ''), 'UTF-8')
+                msg.attach(MIMEText(html2text.handle(content), 'plain', 'UTF-8'))
+                msg.attach(MIMEText(content, 'html', 'UTF-8'))
                 box.add((msg, file_name))
 
             if file_name in old_mails:
