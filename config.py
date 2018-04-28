@@ -29,12 +29,16 @@ def tagesschau(entry):
     return False
 
 
+def heise_security(entry):
+    entry.id = sub(r'http://', 'https://', entry.id)
+    return False
+
+
 feeds = [
-    {'url': 'http://www.heise.de/newsticker/heise-atom.xml', 'title': 'Heise', 'use_uid': True},
-    {'url': 'http://www.heise.de/open/news/news-atom.xml', 'title': 'Heise', 'use_uid': True},
-    {'url': 'http://www.heise.de/security/news/news-atom.xml', 'title': 'Heise', 'use_uid': True},
-    {'url': 'http://www.tagesschau.de/xml/rss2', 'filter': tagesschau, 'use_uid': True},
+    {'url': 'https://www.heise.de/newsticker/heise-atom.xml', 'title': 'Heise', 'use_uid': True},
+    {'url': 'https://www.heise.de/open/news/news-atom.xml', 'title': 'Heise', 'use_uid': True},
+    {'url': 'https://www.heise.de/security/news/news-atom.xml', 'title': 'Heise', 'filter': heise_security, 'use_uid': True},
+    {'url': 'https://www.tagesschau.de/xml/rss2', 'filter': tagesschau, 'use_uid': True},
     {'url': 'https://blog.fefe.de/rss.xml?html', 'use_header': False},
-    'http://git.suckless.org/dwm/atom',
-    {'url': 'https://github.com/weechat/scripts/commits/master.atom', 'title': 'weechat scripts'},
+    {'url': 'https://github.com/jspricke/rss2maildir/commits/master.atom', 'title': 'rss2maildir'},
 ]
