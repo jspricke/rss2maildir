@@ -17,11 +17,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from re import sub
+
 maildir = '.maildir/Feeds'
 
 
 def tagesschau(entry):
-    return 'sportschau' in entry.link
+    if 'sportschau' in entry.link:
+        return True
+    entry.summary = sub(r'<img [^>]*>', '', entry.summary)
+    return False
 
 
 feeds = [

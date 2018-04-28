@@ -196,7 +196,9 @@ def main():
         html2text.wrap_links = False
 
         for entry in reversed(feed.entries):
-            summary = entry.get('summary', entry.link)
+            if filter_func(entry):
+                continue
+            summary = entry.summary if 'summary' in entry else entry.link
             author = 'Author: %s<br>' % entry.author if 'author' in entry else ''
             content = '<a href="%s">Link</a><br>%s<br>%s' % (entry.link, author, summary)
 
@@ -212,7 +214,7 @@ def main():
             file_name = '%s.%s' % (file_title, get_id(entry, use_uid))
             date = get_date(entry, feed, now) if use_date else now
 
-            if file_name not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60 * 60 * 24 * 7:
+            if file_name not in box and mktime(now) - mktime(date) < 60 * 60 * 24 * 7:
                 msg = MIMEMultipart('alternative')
                 san_dict = {
                     '»': '',
