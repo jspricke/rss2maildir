@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
 # Python script to convert from RSS to Maildir
@@ -222,7 +222,7 @@ def main():
             file_name = '%s.%s' % (file_title, get_id(entry, use_uid))
             date = get_date(entry, feed, now) if use_date else now
 
-            if file_name not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60*60*24*7:
+            if file_name not in box and not filter_func(entry) and mktime(now) - mktime(date) < 60 * 60 * 24 * 7:
                 msg = MIMEMultipart('alternative')
                 san_dict = {
                     u'»': '',
@@ -242,6 +242,7 @@ def main():
     for message in old_mails:
         if 'F' not in box.get_message(message).get_flags():
             del box[message]
+
 
 if __name__ == '__main__':
     main()
