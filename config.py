@@ -25,7 +25,9 @@ maildir = '.maildir/Feeds'
 def tagesschau(entry):
     if 'sportschau' in entry.link:
         return True
-    entry.summary = sub(r'<img [^>]*>', '', entry.summary)
+    entry.summary = sub(r'<a href[^>]*><img [^>]*></a>', '', entry.summary)
+    entry.summary = sub(r'<a href[^>]*>Meldung bei www.tagesschau.de lesen</a>', '', entry.summary)
+    entry.summary = entry.summary.replace('<br /><br />', '')
     return False
 
 
