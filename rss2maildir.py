@@ -213,6 +213,8 @@ def main():
 
             file_name = '%s.%s' % (file_title, get_id(entry, use_uid))
             date = get_date(entry, feed, now) if use_date else now
+            if not date:
+                date = now
 
             if file_name not in box and mktime(now) - mktime(date) < 60 * 60 * 24 * 7:
                 msg = MIMEMultipart('alternative')
