@@ -31,20 +31,19 @@ def tagesschau(entry):
     return False
 
 
+def heise(entry):
+    return entry.title.startswith('Anzeige:')
+
+
 def heise_open(entry):
-    entry.id = sub(r'.*-([0-9]*).html', r'https://heise.de/-\1', entry.id)
-    return False
-
-
-def heise_security(entry):
-    entry.id = sub(r'http://', 'https://', entry.id)
+    entry.id = sub(r'.*-([0-9]*).html', r'http://heise.de/-\1', entry.id)
     return False
 
 
 feeds = [
-    {'url': 'https://www.heise.de/newsticker/heise-atom.xml', 'title': 'Heise', 'use_uid': True},
-    {'url': 'https://www.heise.de/open/news/news-atom.xml', 'title': 'Heise', 'filter': heise_open, 'use_uid': True},
-    {'url': 'https://www.heise.de/security/news/news-atom.xml', 'title': 'Heise', 'filter': heise_security, 'use_uid': True},
+    {'url': 'https://www.heise.de/rss/heise-atom.xml', 'title': 'Heise', 'filter': heise, 'use_uid': True},
+    {'url': 'https://www.heise.de/thema/Linux-und-Open-Source?view=atom', 'title': 'Heise', 'filter': heise_open, 'use_uid': True},
+    {'url': 'https://www.heise.de/security/rss/news-atom.xml', 'title': 'Heise', 'use_uid': True},
     {'url': 'https://www.tagesschau.de/xml/rss2', 'filter': tagesschau, 'use_uid': True},
     {'url': 'https://blog.fefe.de/rss.xml?html', 'use_header': False},
     {'url': 'https://github.com/jspricke/rss2maildir/commits/master.atom', 'title': 'rss2maildir'},
