@@ -28,7 +28,7 @@ from lxml.html.diff import htmldiff
 from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, ExternalClashError
 from os.path import expanduser, join
 from subprocess import Popen, PIPE
-from time import gmtime, mktime, strftime
+from time import gmtime, strftime
 from html2text import HTML2Text
 
 import config
@@ -216,7 +216,7 @@ def main():
             if not date:
                 date = now
 
-            if file_name not in box and mktime(now) - mktime(date) < 60 * 60 * 24 * 7:
+            if file_name not in box:
                 msg = MIMEMultipart('alternative')
                 san_dict = {
                     '»': '',
