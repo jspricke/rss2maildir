@@ -221,7 +221,7 @@ def main():
                 san_dict = {
                     '»': '',
                 }
-                msg['From'] = Header(formataddr((replace_dict(title, san_dict), '')))
+                msg['From'] = Header(formataddr((replace_dict(title, san_dict), 'a@b')))
                 msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
                 msg['Subject'] = Header(entry.title.replace('\n', ''), 'UTF-8')
                 msg.attach(MIMEText(html2text.handle(content), 'plain', 'UTF-8'))
