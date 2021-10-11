@@ -17,26 +17,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import errno
+import os
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
-from feedparser import parse
 from hashlib import sha256
 from json import dump, load
-from lxml.html.diff import htmldiff
-from mailbox import Maildir, _create_carefully, _sync_close, MaildirMessage, ExternalClashError
+from mailbox import (ExternalClashError, Maildir, MaildirMessage,
+                     _create_carefully, _sync_close)
 from os.path import expanduser, join
-from subprocess import Popen, PIPE
+from subprocess import PIPE, Popen
 from time import gmtime, strftime
+
+from feedparser import parse
 from html2text import HTML2Text
+from lxml.html.diff import htmldiff
 
 import config
 
-import os
-import errno
 
-
+# fmt: off
 class MyMaildir(Maildir):
     """Modified from /usr/lib/python3.6/mailbox.py"""
 
@@ -99,6 +101,7 @@ class MyMaildir(Maildir):
         # Fall through to here if stat succeeded or open raised EEXIST.
         raise ExternalClashError('Name clash prevented file creation: %s' %
                                  path)
+# fmt: on
 
 
 def replace_dict(string, dict):
@@ -108,33 +111,33 @@ def replace_dict(string, dict):
 
 
 def get_date(entry, feed, updated):
-    if 'updated_parsed' in entry:
+    if "updated_parsed" in entry:
         return entry.updated_parsed
-    if 'published_parsed' in entry:
+    if "published_parsed" in entry:
         return entry.published_parsed
-    if 'updated_parsed' in feed.feed:
+    if "updated_parsed" in feed.feed:
         return feed.feed.updated_parsed
-    if 'updated_parsed' in feed:
+    if "updated_parsed" in feed:
         return feed.updated_parsed
     return updated
 
 
 def get_id(entry, use_uid):
-    if use_uid and 'id' in entry:
+    if use_uid and "id" in entry:
         content = entry.id
-    elif 'summary' in entry and entry.summary:
+    elif "summary" in entry and entry.summary:
         content = entry.summary
-    elif 'title' in entry and entry.title:
+    elif "title" in entry and entry.title:
         content = entry.title
     else:
         content = entry.link
 
-    return sha256(content.encode('utf-8')).hexdigest()
+    return sha256(content.encode("utf-8")).hexdigest()
 
 
 def pparse(feed_url, etag=None, modified=None):
-    if feed_url.startswith('exec:'):
-        process = Popen(feed_url[len('exec:'):], stdout=PIPE, shell=True)
+    if feed_url.startswith("exec:"):
+        process = Popen(feed_url[len("exec:") :], stdout=PIPE, shell=True)
         return parse(process.communicate()[0], etag=etag, modified=modified)
     else:
         return parse(feed_url, etag=etag, modified=modified)
@@ -146,48 +149,50 @@ def main():
     cache_new = {}
 
     try:
-        cache = load(open(join(expanduser(config.maildir), 'cache.json')))
+        cache = load(open(join(expanduser(config.maildir), "cache.json")))
     except IOError:
         cache = {}
 
     for feed_entry in config.feeds:
-        feed_url = feed_entry['url'] if 'url' in feed_entry else feed_entry
-        filter_func = feed_entry['filter'] if 'filter' in feed_entry else lambda x: False
-        use_uid = feed_entry['use_uid'] if 'use_uid' in feed_entry else False
-        use_header = feed_entry['use_header'] if 'use_header' in feed_entry else True
-        use_date = feed_entry['use_date'] if 'use_date' in feed_entry else True
+        feed_url = feed_entry["url"] if "url" in feed_entry else feed_entry
+        filter_func = (
+            feed_entry["filter"] if "filter" in feed_entry else lambda x: False
+        )
+        use_uid = feed_entry["use_uid"] if "use_uid" in feed_entry else False
+        use_header = feed_entry["use_header"] if "use_header" in feed_entry else True
+        use_date = feed_entry["use_date"] if "use_date" in feed_entry else True
 
-        if use_header and feed_url in cache and 'etag' in cache[feed_url]:
-            feed = pparse(feed_url, etag=cache[feed_url]['etag'])
-        elif use_header and feed_url in cache and 'modified' in cache[feed_url]:
-            feed = pparse(feed_url, modified=cache[feed_url]['modified'])
+        if use_header and feed_url in cache and "etag" in cache[feed_url]:
+            feed = pparse(feed_url, etag=cache[feed_url]["etag"])
+        elif use_header and feed_url in cache and "modified" in cache[feed_url]:
+            feed = pparse(feed_url, modified=cache[feed_url]["modified"])
         else:
             feed = pparse(feed_url)
 
         cache_new[feed_url] = {}
         if use_header:
-            if 'etag' in feed:
-                cache_new[feed_url]['etag'] = feed.etag
-            elif 'modified' in feed:
-                cache_new[feed_url]['modified'] = feed.modified
+            if "etag" in feed:
+                cache_new[feed_url]["etag"] = feed.etag
+            elif "modified" in feed:
+                cache_new[feed_url]["modified"] = feed.modified
 
         san_dict = {
-            ' ': '_',
-            '.': '_',
-            ':': '_',
-            '/': '_',
+            " ": "_",
+            ".": "_",
+            ":": "_",
+            "/": "_",
         }
-        file_title = feed_entry['title'] if 'title' in feed_entry else feed_url
+        file_title = feed_entry["title"] if "title" in feed_entry else feed_url
         file_title = replace_dict(file_title, san_dict)
-        file_title = ''.join([i if ord(i) < 128 else '_' for i in file_title])
+        file_title = "".join([i if ord(i) < 128 else "_" for i in file_title])
 
         if len(feed.entries) == 0:
             old_mails = [m for m in old_mails if not m.startswith(file_title)]
-            cache_new[feed_url]['entries'] = cache.get(feed_url, {}).get('entries', {})
+            cache_new[feed_url]["entries"] = cache.get(feed_url, {}).get("entries", {})
             continue
 
-        cache_new[feed_url]['entries'] = {}
-        title = feed_entry['title'] if 'title' in feed_entry else feed.feed.title
+        cache_new[feed_url]["entries"] = {}
+        title = feed_entry["title"] if "title" in feed_entry else feed.feed.title
         now = gmtime()
 
         html2text = HTML2Text()
@@ -198,45 +203,49 @@ def main():
         for entry in reversed(feed.entries):
             if filter_func(entry):
                 continue
-            summary = entry.summary if 'summary' in entry else entry.link
-            author = 'Author: %s<br>' % entry.author if 'author' in entry else ''
-            content = '<a href="%s">Link</a><br>%s<br>%s' % (entry.link, author, summary)
+            summary = entry.summary if "summary" in entry else entry.link
+            author = "Author: %s<br>" % entry.author if "author" in entry else ""
+            content = '<a href="%s">Link</a><br>%s<br>%s' % (
+                entry.link,
+                author,
+                summary,
+            )
 
-            uid = entry.id if 'id' in entry else entry.link
+            uid = entry.id if "id" in entry else entry.link
 
-            cache_new[feed_url]['entries'][uid] = content
+            cache_new[feed_url]["entries"][uid] = content
 
-            old_content = cache.get(feed_url, {}).get('entries', {}).get(uid)
+            old_content = cache.get(feed_url, {}).get("entries", {}).get(uid)
 
             if old_content and old_content != content:
                 content = htmldiff(old_content, content)
 
-            file_name = '%s.%s' % (file_title, get_id(entry, use_uid))
+            file_name = "%s.%s" % (file_title, get_id(entry, use_uid))
             date = get_date(entry, feed, now) if use_date else now
             if not date:
                 date = now
 
             if file_name not in box:
-                msg = MIMEMultipart('alternative')
+                msg = MIMEMultipart("alternative")
                 san_dict = {
-                    '»': '',
+                    "»": "",
                 }
-                msg['From'] = Header(formataddr((replace_dict(title, san_dict), 'a@b')))
-                msg['Date'] = strftime('%a, %d %b %Y %H:%M:%S %z', date)
-                msg['Subject'] = Header(entry.title.replace('\n', ''), 'UTF-8')
-                msg.attach(MIMEText(html2text.handle(content), 'plain', 'UTF-8'))
-                msg.attach(MIMEText(content, 'html', 'UTF-8'))
+                msg["From"] = Header(formataddr((replace_dict(title, san_dict), "a@b")))
+                msg["Date"] = strftime("%a, %d %b %Y %H:%M:%S %z", date)
+                msg["Subject"] = Header(entry.title.replace("\n", ""), "UTF-8")
+                msg.attach(MIMEText(html2text.handle(content), "plain", "UTF-8"))
+                msg.attach(MIMEText(content, "html", "UTF-8"))
                 box.add((msg, file_name))
 
             if file_name in old_mails:
                 old_mails.remove(file_name)
 
-    dump(cache_new, open(join(expanduser(config.maildir), 'cache.json'), 'w'), indent=2)
+    dump(cache_new, open(join(expanduser(config.maildir), "cache.json"), "w"), indent=2)
 
     for message in old_mails:
-        if 'F' not in box.get_message(message).get_flags():
+        if "F" not in box.get_message(message).get_flags():
             del box[message]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
