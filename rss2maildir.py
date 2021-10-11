@@ -104,9 +104,9 @@ class MyMaildir(Maildir):
 # fmt: on
 
 
-def replace_dict(string, dict):
-    for key in dict:
-        string = string.replace(key, dict[key])
+def replace_dict(string, dct):
+    for key in dct:
+        string = string.replace(key, dct[key])
     return string
 
 
