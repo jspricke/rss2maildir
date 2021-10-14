@@ -2,7 +2,7 @@
 #
 # Python script to convert from RSS to Maildir (config file)
 #
-# Copyright (C) 2015  Jochen Sprickerhof
+# Copyright (C) 2015-2021  Jochen Sprickerhof
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,11 +18,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from re import sub
+from typing import Callable, Union
 
 maildir = ".maildir/Feeds"
 
 
-def tagesschau(entry):
+def tagesschau(entry) -> bool:
     if ".de/sport" in entry.link or ".de/wirtschaft/finanzen/" in entry.link:
         return True
     entry.summary = sub(r"<a href[^>]*><img [^>]*></a>", "", entry.summary)
@@ -33,16 +34,16 @@ def tagesschau(entry):
     return False
 
 
-def heise(entry):
+def heise(entry) -> bool:
     return entry.title.startswith("Anzeige:")
 
 
-def heise_open(entry):
+def heise_open(entry) -> bool:
     entry.id = sub(r".*-([0-9]*).html", r"http://heise.de/-\1", entry.id)
     return False
 
 
-feeds = [
+feeds: list[Union[str, dict[str, Union[str, Callable, bool]]]] = [
     {
         "url": "https://www.heise.de/rss/heise-atom.xml",
         "title": "Heise",

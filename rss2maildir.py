@@ -1,8 +1,8 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 #
 # Python script to convert from RSS to Maildir
 #
-# Copyright (C) 2015  Jochen Sprickerhof
+# Copyright (C) 2015-2021  Jochen Sprickerhof
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,9 +29,9 @@ from mailbox import (ExternalClashError, Maildir, MaildirMessage,
                      _create_carefully, _sync_close)
 from os.path import expanduser, join
 from subprocess import PIPE, Popen
-from time import gmtime, strftime
+from time import gmtime, strftime, struct_time
 
-from feedparser import parse
+from feedparser import FeedParserDict, parse
 from html2text import HTML2Text
 from lxml.html.diff import htmldiff
 
@@ -104,13 +104,15 @@ class MyMaildir(Maildir):
 # fmt: on
 
 
-def replace_dict(string, dct):
+def replace_dict(string: str, dct: dict[str, str]) -> str:
     for key in dct:
         string = string.replace(key, dct[key])
     return string
 
 
-def get_date(entry, feed, updated):
+def get_date(
+    entry, feed: FeedParserDict, updated: struct_time
+) -> struct_time:
     if "updated_parsed" in entry:
         return entry.updated_parsed
     if "published_parsed" in entry:
@@ -122,7 +124,7 @@ def get_date(entry, feed, updated):
     return updated
 
 
-def get_id(entry, use_uid):
+def get_id(entry, use_uid: bool) -> str:
     if use_uid and "id" in entry:
         content = entry.id
     elif "summary" in entry and entry.summary:
@@ -135,7 +137,7 @@ def get_id(entry, use_uid):
     return sha256(content.encode("utf-8")).hexdigest()
 
 
-def pparse(feed_url, etag=None, modified=None):
+def pparse(feed_url: str, etag: str = None, modified: str = None) -> FeedParserDict:
     if feed_url.startswith("exec:"):
         process = Popen(feed_url[len("exec:") :], stdout=PIPE, shell=True)
         return parse(process.communicate()[0], etag=etag, modified=modified)
@@ -143,7 +145,7 @@ def pparse(feed_url, etag=None, modified=None):
         return parse(feed_url, etag=etag, modified=modified)
 
 
-def main():
+def main() -> None:
     box = MyMaildir(expanduser(config.maildir), factory=MaildirMessage)
     old_mails = list(box.keys())
     cache_new = {}
