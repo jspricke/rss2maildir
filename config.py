@@ -19,32 +19,56 @@
 
 from re import sub
 
-maildir = '.maildir/Feeds'
+maildir = ".maildir/Feeds"
 
 
 def tagesschau(entry):
-    if 'sportschau' in entry.link:
+    if ".de/sport" in entry.link or ".de/wirtschaft/finanzen/" in entry.link:
         return True
-    entry.summary = sub(r'<a href[^>]*><img [^>]*></a>', '', entry.summary)
-    entry.summary = sub(r'<a href[^>]*>Meldung bei www.tagesschau.de lesen</a>', '', entry.summary)
-    entry.summary = entry.summary.replace('<br /><br />', '')
+    entry.summary = sub(r"<a href[^>]*><img [^>]*></a>", "", entry.summary)
+    entry.summary = sub(
+        r"<a href[^>]*>Meldung bei www.tagesschau.de lesen</a>", "", entry.summary
+    )
+    entry.summary = entry.summary.replace("<br /><br />", "")
     return False
 
 
 def heise(entry):
-    return entry.title.startswith('Anzeige:')
+    return entry.title.startswith("Anzeige:")
 
 
 def heise_open(entry):
-    entry.id = sub(r'.*-([0-9]*).html', r'http://heise.de/-\1', entry.id)
+    entry.id = sub(r".*-([0-9]*).html", r"http://heise.de/-\1", entry.id)
     return False
 
 
 feeds = [
-    {'url': 'https://www.heise.de/rss/heise-atom.xml', 'title': 'Heise', 'filter': heise, 'use_uid': True},
-    {'url': 'https://www.heise.de/thema/Linux-und-Open-Source?view=atom', 'title': 'Heise', 'filter': heise_open, 'use_uid': True},
-    {'url': 'https://www.heise.de/security/rss/news-atom.xml', 'title': 'Heise', 'use_uid': True},
-    {'url': 'https://www.tagesschau.de/xml/rss2', 'filter': tagesschau, 'use_uid': True},
-    {'url': 'https://blog.fefe.de/rss.xml?html', 'use_header': False},
-    {'url': 'https://github.com/jspricke/rss2maildir/commits/master.atom', 'title': 'rss2maildir'},
+    {
+        "url": "https://www.heise.de/rss/heise-atom.xml",
+        "title": "Heise",
+        "filter": heise,
+        "use_uid": True,
+    },
+    {
+        "url": "https://www.heise.de/thema/Linux-und-Open-Source?view=atom",
+        "title": "Heise",
+        "filter": heise_open,
+        "use_uid": True,
+    },
+    {
+        "url": "https://www.heise.de/security/rss/news-atom.xml",
+        "title": "Heise",
+        "use_uid": True,
+    },
+    {
+        "url": "https://www.tagesschau.de/xml/rss2",
+        "filter": tagesschau,
+        "use_uid": True,
+    },
+    {"url": "https://blog.fefe.de/rss.xml?html", "use_header": False},
+    {
+        "url": "https://github.com/jspricke/rss2maildir/commits/master.atom",
+        "title": "rss2maildir",
+    },
+    "https://www.daemonology.net/hn-daily/index.rss",
 ]
