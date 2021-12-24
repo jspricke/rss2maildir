@@ -28,8 +28,9 @@ from json import dump, load
 from mailbox import (ExternalClashError, Maildir, MaildirMessage,
                      _create_carefully, _sync_close)
 from os.path import expanduser, join
-from subprocess import PIPE, Popen
+from subprocess import check_output
 from time import gmtime, strftime, struct_time
+from typing import Any, Callable
 
 from feedparser import FeedParserDict, parse
 from html2text import HTML2Text
@@ -110,9 +111,7 @@ def replace_dict(string: str, dct: dict[str, str]) -> str:
     return string
 
 
-def get_date(
-    entry, feed: FeedParserDict, updated: struct_time
-) -> struct_time:
+def get_date(entry, feed: FeedParserDict, updated: struct_time) -> struct_time:
     if "updated_parsed" in entry:
         return entry.updated_parsed
     if "published_parsed" in entry:
@@ -139,25 +138,27 @@ def get_id(entry, use_uid: bool) -> str:
 
 def pparse(feed_url: str, etag: str = None, modified: str = None) -> FeedParserDict:
     if feed_url.startswith("exec:"):
-        process = Popen(feed_url[len("exec:") :], stdout=PIPE, shell=True)
-        return parse(process.communicate()[0], etag=etag, modified=modified)
-    else:
-        return parse(feed_url, etag=etag, modified=modified)
+        process = check_output(feed_url.lstrip("exec:"), text=True)
+        return parse(process, etag=etag, modified=modified)
+    return parse(feed_url, etag=etag, modified=modified)
 
 
 def main() -> None:
     box = MyMaildir(expanduser(config.maildir), factory=MaildirMessage)
     old_mails = list(box.keys())
-    cache_new = {}
+    cache_new: dict[str, Any] = {}
 
     try:
-        cache = load(open(join(expanduser(config.maildir), "cache.json")))
+        with open(
+            join(expanduser(config.maildir), "cache.json"), encoding="utf-8"
+        ) as json_cache:
+            cache = load(json_cache)
     except IOError:
         cache = {}
 
     for feed_entry in config.feeds:
         feed_url = feed_entry["url"] if "url" in feed_entry else feed_entry
-        filter_func = (
+        filter_func: Callable = (
             feed_entry["filter"] if "filter" in feed_entry else lambda x: False
         )
         use_uid = feed_entry["use_uid"] if "use_uid" in feed_entry else False
@@ -206,12 +207,8 @@ def main() -> None:
             if filter_func(entry):
                 continue
             summary = entry.summary if "summary" in entry else entry.link
-            author = "Author: %s<br>" % entry.author if "author" in entry else ""
-            content = '<a href="%s">Link</a><br>%s<br>%s' % (
-                entry.link,
-                author,
-                summary,
-            )
+            author = f"Author: {entry.author}<br>" if "author" in entry else ""
+            content = f'<a href="{entry.link}">Link</a><br>{author}<br>{summary}'
 
             uid = entry.id if "id" in entry else entry.link
 
@@ -222,7 +219,7 @@ def main() -> None:
             if old_content and old_content != content:
                 content = htmldiff(old_content, content)
 
-            file_name = "%s.%s" % (file_title, get_id(entry, use_uid))
+            file_name = f"{file_title}.{get_id(entry, use_uid)}"
             date = get_date(entry, feed, now) if use_date else now
             if not date:
                 date = now
@@ -242,7 +239,10 @@ def main() -> None:
             if file_name in old_mails:
                 old_mails.remove(file_name)
 
-    dump(cache_new, open(join(expanduser(config.maildir), "cache.json"), "w"), indent=2)
+    with open(
+        join(expanduser(config.maildir), "cache.json"), "w", encoding="utf-8"
+    ) as json_cache:
+        dump(cache_new, json_cache, indent=2)
 
     for message in old_mails:
         if "F" not in box.get_message(message).get_flags():

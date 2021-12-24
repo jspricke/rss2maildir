@@ -43,7 +43,7 @@ def heise_open(entry) -> bool:
     return False
 
 
-feeds: list[Union[str, dict[str, Union[str, Callable, bool]]]] = [
+feeds: list[Any] = [
     {
         "url": "https://www.heise.de/rss/heise-atom.xml",
         "title": "Heise",
