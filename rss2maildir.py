@@ -138,7 +138,7 @@ def get_id(entry, use_uid: bool) -> str:
 
 def pparse(feed_url: str, etag: str = None, modified: str = None) -> FeedParserDict:
     if feed_url.startswith("exec:"):
-        process = check_output(feed_url.lstrip("exec:"), text=True)
+        process = check_output(feed_url.removeprefix("exec:"), text=True)
         return parse(process, etag=etag, modified=modified)
     return parse(feed_url, etag=etag, modified=modified)
 
